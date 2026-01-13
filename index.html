@@ -158,14 +158,33 @@
     }
 
     function startScanner() {
-        const scanner = new Html5Qrcode("reader");
-        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
-            scanner.stop();
-            searchBook(txt);
-        });
-    }
+    const scanner = new Html5Qrcode("reader");
+    const msg = document.getElementById('statusMsg');
+    
+    msg.innerText = "המצלמה נפתחת...";
+
+    scanner.start(
+        { facingMode: "environment" }, 
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        (decodedText) => {
+            // ברגע שזוהה ברקוד:
+            msg.innerText = "ברקוד זוהה! מחפש פרטים...";
+            
+            // אנחנו קוראים לחיפוש מיד
+            searchBook(decodedText);
+            
+            // סוגרים את המצלמה רק אחרי שהתחלנו את החיפוש
+            scanner.stop().then(() => {
+                console.log("Scanner stopped");
+            }).catch(err => console.warn("Scanner stop error", err));
+        }
+    ).catch(err => {
+        msg.innerText = "שגיאת מצלמה. וודאי שאישרת הרשאות.";
+    });
+}
 
     loadLibrary();
 </script>
 </body>
 </html>
+
