@@ -199,4 +199,12 @@
             { fps: 10, qrbox: { width: 250, height: 150 } },
             (decodedText) => {
                 searchBook(decodedText);
-                html5QrCode.
+                html5QrCode.stop();
+            }
+        ).catch(err => { showStatus("שגיאת מצלמה."); });
+    }
+
+    loadLibrary();
+</script>
+</body>
+</html>
