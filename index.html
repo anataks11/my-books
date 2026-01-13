@@ -3,88 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ניהול קריאה</title>
+    <title>ניהול הספרייה שלי</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; padding: 20px; direction: rtl; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        
-        /* אזור חיפוש */
-        .search-area { background: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 30px; text-align: center; }
-        input { padding: 10px; width: 60%; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; }
-        button { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        
-        /* טבלאות */
-        h2 { border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; color: #1e293b; margin-top: 40px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
-        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #f1f5f9; }
-        th { background: #f8fafc; color: #64748b; font-size: 14px; }
-        
-        .book-result { background: #dcfce7; padding: 15px; border-radius: 10px; margin: 15px 0; display: none; text-align: center; }
-        
-        /* עיצוב כפתורים קטנים בטבלה */
-        .action-select { padding: 5px; border-radius: 5px; border: 1px solid #cbd5e1; font-size: 13px; }
-        .del-link { color: #ef4444; cursor: pointer; font-size: 12px; margin-right: 10px; text-decoration: underline; }
-        
-        #reader { width: 100%; max-width: 400px; margin: 10px auto; border-radius: 10px; overflow: hidden; }
+        body { font-family: system-ui, sans-serif; background: #f8fafc; padding: 15px; direction: rtl; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .search-area { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
+        input { padding: 12px; width: 70%; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 10px; }
+        button { background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin: 10px 0; background: #000; }
+        .book-result { background: #dcfce7; padding: 15px; border-radius: 10px; margin: 15px 0; display: none; text-align: center; border: 2px solid #16a34a; }
+        #statusMsg { background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 14px; display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: right; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        h2 { font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 30px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📚 ניהול הספרייה שלי</h1>
+    <h1>📚 הספרייה שלי</h1>
 
     <div class="search-area">
-        <input type="text" id="searchInput" placeholder="חפשי שם ספר או סרקי ברקוד...">
-        <button onclick="handleSearch()">חיפוש</button>
+        <input type="text" id="searchInput" placeholder="שם ספר או הקלד ברקוד...">
+        <button onclick="handleSearch()">🔍 חפש לפי שם</button>
+        
         <div id="reader"></div>
-        <button onclick="startScanner()" style="background: #64748b; margin-top: 10px;">📷 סריקת ברקוד</button>
+        <button id="scanBtn" onclick="startScanner()" style="background: #64748b;">📷 סרוק ברקוד</button>
+        
+        <div id="statusMsg"></div>
 
         <div id="bookResult" class="book-result">
-            <strong id="resTitle"></strong> | <span id="resAuthor"></span>
-            <button onclick="saveToSupabase()" style="background: #16a34a; margin-right: 15px;">✅ הוסף למדף</button>
+            <div id="resDetails"></div>
+            <button onclick="saveToSupabase()" style="background: #16a34a; margin-top: 10px;">✅ הוסף למדף שלי</button>
         </div>
     </div>
 
     <h2>⏳ רוצה לקרוא</h2>
-    <table id="tableWant">
-        <thead>
-            <tr>
-                <th>שם הספר</th>
-                <th>סופר/ת</th>
-                <th>פעולות</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+    <table id="tableWant"><tbody></tbody></table>
 
     <h2>✅ קראתי</h2>
-    <table id="tableRead">
-        <thead>
-            <tr>
-                <th>שם הספר</th>
-                <th>סופר/ת</th>
-                <th>פעולות</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+    <table id="tableRead"><tbody></tbody></table>
 </div>
 
 <script>
     const SUPABASE_URL = 'https://ekaoejqbczzckwfjwqqu.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrYW9lanFiY3p6Y2t3Zmp3cXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyODYwMTUsImV4cCI6MjA4Mzg2MjAxNX0.sTHbaAk35xUMcUk7a-tXXh3xypz3iKFnku23emTdxKw';    
+
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentBook = null;
+    let html5QrCode = null;
 
-    // חיפוש ספר
+    function showStatus(text) {
+        const s = document.getElementById('statusMsg');
+        s.style.display = 'block';
+        s.innerText = text;
+    }
+
     async function searchBook(query) {
+        showStatus("מחפש בגוגל: " + query + "...");
         try {
-            const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&langRestrict=he`);
-            const data = await response.json();
-            if (data.items) {
+            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            
+            if (data.items && data.items.length > 0) {
                 const info = data.items[0].volumeInfo;
                 currentBook = {
                     title: info.title,
@@ -92,10 +76,14 @@
                     status: 'want_to_read'
                 };
                 document.getElementById('bookResult').style.display = 'block';
-                document.getElementById('resTitle').innerText = currentBook.title;
-                document.getElementById('resAuthor').innerText = currentBook.author;
+                document.getElementById('resDetails').innerHTML = `<strong>${currentBook.title}</strong><br>${currentBook.author}`;
+                showStatus("הספר נמצא!");
+            } else {
+                showStatus("לא נמצאו תוצאות לברקוד: " + query);
             }
-        } catch (e) { alert("שגיאה בחיפוש"); }
+        } catch (e) {
+            showStatus("שגיאת תקשורת: " + e.message);
+        }
     }
 
     function handleSearch() {
@@ -103,45 +91,31 @@
         if(q) searchBook(q);
     }
 
-    // שמירה למסד
     async function saveToSupabase() {
-        await _supabase.from('books').insert([currentBook]);
-        document.getElementById('bookResult').style.display = 'none';
-        document.getElementById('searchInput').value = '';
-        loadLibrary();
+        showStatus("שומר...");
+        const { error } = await _supabase.from('books').insert([currentBook]);
+        if (error) showStatus("שגיאת שמירה: " + error.message);
+        else {
+            document.getElementById('bookResult').style.display = 'none';
+            showStatus("נשמר בהצלחה!");
+            loadLibrary();
+        }
     }
 
-    // טעינה וחלוקה לשתי טבלאות
     async function loadLibrary() {
         const { data, error } = await _supabase.from('books').select('*').order('created_at', { ascending: false });
         if (error) return;
-
-        const tableWant = document.querySelector('#tableWant tbody');
-        const tableRead = document.querySelector('#tableRead tbody');
-        
-        tableWant.innerHTML = '';
-        tableRead.innerHTML = '';
-
-        data.forEach(book => {
-            const row = `
-                <tr>
-                    <td><strong>${book.title}</strong></td>
-                    <td>${book.author}</td>
-                    <td>
-                        <select class="action-select" onchange="updateStatus('${book.id}', this.value)">
-                            <option value="want_to_read" ${book.status === 'want_to_read' ? 'selected' : ''}>רוצה לקרוא</option>
-                            <option value="read" ${book.status === 'read' ? 'selected' : ''}>קראתי</option>
-                        </select>
-                        <span class="del-link" onclick="deleteBook('${book.id}')">מחיקה</span>
-                    </td>
-                </tr>
-            `;
-            
-            if (book.status === 'read') {
-                tableRead.innerHTML += row;
-            } else {
-                tableWant.innerHTML += row;
-            }
+        const tWant = document.querySelector('#tableWant tbody');
+        const tRead = document.querySelector('#tableRead tbody');
+        tWant.innerHTML = tRead.innerHTML = '';
+        data.forEach(b => {
+            const row = `<tr><td><b>${b.title}</b><br>${b.author}</td><td>
+                <select onchange="updateStatus('${b.id}', this.value)">
+                    <option value="want_to_read" ${b.status==='want_to_read'?'selected':''}>רוצה</option>
+                    <option value="read" ${b.status==='read'?'selected':''}>קראתי</option>
+                </select><br><small onclick="deleteBook('${b.id}')" style="color:red;cursor:pointer">מחק</small></td></tr>`;
+            if (b.status === 'read') tRead.innerHTML += row;
+            else tWant.innerHTML += row;
         });
     }
 
@@ -151,40 +125,31 @@
     }
 
     async function deleteBook(id) {
-        if(confirm("למחוק את הספר?")) {
+        if(confirm("למחוק?")) {
             await _supabase.from('books').delete().eq('id', id);
             loadLibrary();
         }
     }
 
     function startScanner() {
-    const scanner = new Html5Qrcode("reader");
-    const msg = document.getElementById('statusMsg');
-    
-    msg.innerText = "המצלמה נפתחת...";
-
-    scanner.start(
-        { facingMode: "environment" }, 
-        { fps: 10, qrbox: { width: 250, height: 150 } },
-        (decodedText) => {
-            // ברגע שזוהה ברקוד:
-            msg.innerText = "ברקוד זוהה! מחפש פרטים...";
-            
-            // אנחנו קוראים לחיפוש מיד
-            searchBook(decodedText);
-            
-            // סוגרים את המצלמה רק אחרי שהתחלנו את החיפוש
-            scanner.stop().then(() => {
-                console.log("Scanner stopped");
-            }).catch(err => console.warn("Scanner stop error", err));
-        }
-    ).catch(err => {
-        msg.innerText = "שגיאת מצלמה. וודאי שאישרת הרשאות.";
-    });
-}
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+        
+        showStatus("מנסה לפתוח מצלמה...");
+        
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            { fps: 10, qrbox: { width: 250, height: 150 } },
+            (decodedText) => {
+                showStatus("זיהיתי ברקוד: " + decodedText);
+                searchBook(decodedText);
+                html5QrCode.stop();
+            }
+        ).catch(err => {
+            showStatus("שגיאת מצלמה: " + err);
+        });
+    }
 
     loadLibrary();
 </script>
 </body>
 </html>
-
