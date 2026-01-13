@@ -12,17 +12,24 @@
         .search-area { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
         input { padding: 12px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 10px; outline: none; box-sizing: border-box; }
         .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
         .btn-search { background: #2563eb; color: white; }
         .btn-clear { background: #e2e8f0; color: #475569; }
         .btn-scan { background: #64748b; color: white; width: 100%; margin-top: 5px; }
         #reader { width: 100%; border-radius: 10px; overflow: hidden; margin: 10px 0; background: #000; }
-        .book-result { background: #dcfce7; padding: 15px; border-radius: 10px; margin: 15px 0; display: none; text-align: center; border: 2px solid #16a34a; }
+        
+        /* עיצוב רשימת התוצאות */
+        .results-list { margin: 15px 0; display: none; text-align: right; }
+        .result-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .result-item:hover { background: #f0f9ff; border-color: #3b82f6; }
+        .result-item strong { display: block; color: #1e293b; }
+        .result-item span { font-size: 12px; color: #64748b; }
+
         #statusMsg { background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 14px; display: none; color: #856404; font-weight: 500; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; text-align: right; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
         h2 { font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 30px; color: #1e293b; }
-        .del-link { color: #ef4444; cursor: pointer; text-decoration: underline; font-size: 12px; }
+        .del-link { color: #ef4444; cursor: pointer; text-decoration: underline; font-size: 11px; }
         select { padding: 6px; border-radius: 6px; border: 1px solid #ccc; background: white; }
     </style>
 </head>
@@ -44,9 +51,10 @@
         
         <div id="statusMsg"></div>
 
-        <div id="bookResult" class="book-result">
-            <div id="resDetails"></div>
-            <button onclick="saveToSupabase()" style="background: #16a34a; margin-top: 10px; color: white; width: 100%; border: none; padding: 10px; border-radius: 8px; font-weight: bold;">✅ הוסף למדף שלי</button>
+        <div id="resultsList" class="results-list">
+            <p style="font-weight: bold; font-size: 14px; margin-bottom: 10px;">בחר/י את הספר הנכון:</p>
+            <div id="listContent"></div>
+            <button onclick="manualEntry()" style="background: #94a3b8; color: white; width: 100%; margin-top: 10px;">לא מצאתי? הוספה ידנית</button>
         </div>
     </div>
 
@@ -58,13 +66,10 @@
 </div>
 
 <script>
-    // --- הגדרות Supabase ---
     const SUPABASE_URL = 'https://ekaoejqbczzckwfjwqqu.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrYW9lanFiY3p6Y2t3Zmp3cXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyODYwMTUsImV4cCI6MjA4Mzg2MjAxNX0.sTHbaAk35xUMcUk7a-tXXh3xypz3iKFnku23emTdxKw';    
-
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentBook = null;
     let html5QrCode = null;
 
     function showStatus(text) {
@@ -73,68 +78,59 @@
         s.innerText = text;
     }
 
-    // פונקציה לניקוי שדות
     function clearFields() {
         document.getElementById('searchInput').value = '';
         document.getElementById('statusMsg').style.display = 'none';
-        document.getElementById('bookResult').style.display = 'none';
-        currentBook = null;
-        if (html5QrCode) {
-            html5QrCode.stop().catch(() => {});
-        }
+        document.getElementById('resultsList').style.display = 'none';
+        if (html5QrCode) html5QrCode.stop().catch(() => {});
     }
 
     async function searchBook(query) {
-        showStatus("מחפש נתונים עבור: " + query + "...");
+        showStatus("מחפש תוצאות...");
+        document.getElementById('resultsList').style.display = 'none';
+
         try {
-            let res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}`);
-            let data = await res.json();
+            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&langRestrict=he`);
+            const data = await res.json();
             
-            let foundCorrectBook = false;
-
             if (data.items && data.items.length > 0) {
-                const info = data.items[0].volumeInfo;
-                const foundTitle = info.title;
-                const foundAuthor = info.authors ? info.authors.join(', ') : 'לא ידוע';
-
-                if (confirm(`האם זה הספר הנכון?\n\nשם: ${foundTitle}\nסופר/ת: ${foundAuthor}`)) {
-                    currentBook = {
-                        title: foundTitle,
-                        author: foundAuthor,
-                        status: 'want_to_read'
-                    };
-                    foundCorrectBook = true;
-                    displayBookResult();
-                    showStatus("נמצא ספר!");
-                }
-            }
-
-            if (!foundCorrectBook) {
-                showStatus("ממתין להזנה ידנית...");
-                const manualTitle = prompt("לא מצאנו את הספר המדויק. מה שם הספר?");
-                if (manualTitle) {
-                    const manualAuthor = prompt(`מי הסופר/ת של "${manualTitle}"?`);
-                    currentBook = {
-                        title: manualTitle,
-                        author: manualAuthor || "לא ידוע",
-                        status: 'want_to_read'
-                    };
-                    displayBookResult();
-                    showStatus("הוספה ידנית מוכנה.");
-                } else {
-                    showStatus("החיפוש בוטל.");
-                }
+                displayResults(data.items);
+                showStatus("נמצאו " + data.items.length + " תוצאות:");
+            } else {
+                showStatus("לא נמצאו תוצאות. עובר להוספה ידנית...");
+                manualEntry();
             }
         } catch (e) {
             showStatus("שגיאת תקשורת: " + e.message);
         }
     }
 
-    function displayBookResult() {
-        const resDiv = document.getElementById('bookResult');
-        resDiv.style.display = 'block';
-        document.getElementById('resDetails').innerHTML = `<strong>${currentBook.title}</strong><br><span style="color:#666">${currentBook.author}</span>`;
-        resDiv.scrollIntoView({ behavior: 'smooth' });
+    function displayResults(items) {
+        const listDiv = document.getElementById('resultsList');
+        const content = document.getElementById('listContent');
+        content.innerHTML = '';
+        listDiv.style.display = 'block';
+
+        items.forEach(item => {
+            const info = item.volumeInfo;
+            const title = info.title;
+            const author = info.authors ? info.authors.join(', ') : 'לא ידוע';
+
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            div.innerHTML = `<strong>${title}</strong><span>${author}</span>`;
+            div.onclick = () => saveToSupabase(title, author);
+            content.appendChild(div);
+        });
+        listDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function manualEntry() {
+        const manualTitle = prompt("מה שם הספר?");
+        if (manualTitle) {
+            const manualAuthor = prompt(`מי הסופר/ת של "${manualTitle}"?`);
+            await saveToSupabase(manualTitle, manualAuthor || "לא ידוע");
+        }
     }
 
     function handleSearch() {
@@ -142,9 +138,14 @@
         if(q) searchBook(q);
     }
 
-    async function saveToSupabase() {
-        if (!currentBook) return;
-        const { error } = await _supabase.from('books').insert([currentBook]);
+    async function saveToSupabase(title, author) {
+        showStatus("שומר את '" + title + "'...");
+        const { error } = await _supabase.from('books').insert([{
+            title: title,
+            author: author,
+            status: 'want_to_read'
+        }]);
+
         if (error) {
             showStatus("שגיאה בשמירה: " + error.message);
         } else {
@@ -165,7 +166,7 @@
         data.forEach(b => {
             const row = `<tr>
                 <td><b>${b.title}</b><br><span style="color:#666; font-size:12px;">${b.author}</span></td>
-                <td>
+                <td style="white-space:nowrap;">
                     <select onchange="updateStatus('${b.id}', this.value)">
                         <option value="want_to_read" ${b.status==='want_to_read'?'selected':''}>רוצה</option>
                         <option value="read" ${b.status==='read'?'selected':''}>קראתי</option>
@@ -193,21 +194,9 @@
     function startScanner() {
         if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
         showStatus("פותח מצלמה...");
-        
         html5QrCode.start(
             { facingMode: "environment" }, 
             { fps: 10, qrbox: { width: 250, height: 150 } },
             (decodedText) => {
-                showStatus("ברקוד נקלט: " + decodedText);
                 searchBook(decodedText);
-                html5QrCode.stop();
-            }
-        ).catch(err => {
-            showStatus("שגיאת מצלמה.");
-        });
-    }
-
-    loadLibrary();
-</script>
-</body>
-</html>
+                html5QrCode.
