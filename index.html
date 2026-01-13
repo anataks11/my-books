@@ -10,8 +10,12 @@
         body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; padding: 15px; direction: rtl; }
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .search-area { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
-        input { padding: 12px; width: 75%; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 10px; outline: none; box-sizing: border-box; }
-        button { background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
+        input { padding: 12px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 10px; outline: none; box-sizing: border-box; }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-search { background: #2563eb; color: white; }
+        .btn-clear { background: #e2e8f0; color: #475569; }
+        .btn-scan { background: #64748b; color: white; width: 100%; margin-top: 5px; }
         #reader { width: 100%; border-radius: 10px; overflow: hidden; margin: 10px 0; background: #000; }
         .book-result { background: #dcfce7; padding: 15px; border-radius: 10px; margin: 15px 0; display: none; text-align: center; border: 2px solid #16a34a; }
         #statusMsg { background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 14px; display: none; color: #856404; font-weight: 500; }
@@ -19,7 +23,7 @@
         th, td { padding: 12px; text-align: right; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
         h2 { font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 30px; color: #1e293b; }
         .del-link { color: #ef4444; cursor: pointer; text-decoration: underline; font-size: 12px; }
-        select { padding: 6px; border-radius: 6px; border: 1px solid #ccc; background: white; font-size: 13px; }
+        select { padding: 6px; border-radius: 6px; border: 1px solid #ccc; background: white; }
     </style>
 </head>
 <body>
@@ -29,16 +33,20 @@
 
     <div class="search-area">
         <input type="text" id="searchInput" placeholder="שם ספר או הקלד ברקוד...">
-        <button onclick="handleSearch()">🔍 חיפוש לפי שם</button>
+        
+        <div class="btn-group">
+            <button class="btn-search" onclick="handleSearch()">🔍 חיפוש</button>
+            <button class="btn-clear" onclick="clearFields()">🧹 נקה</button>
+        </div>
         
         <div id="reader"></div>
-        <button id="scanBtn" onclick="startScanner()" style="background: #64748b;">📷 סריקת ברקוד (ISBN)</button>
+        <button id="scanBtn" class="btn-scan" onclick="startScanner()">📷 סרוק ברקוד</button>
         
         <div id="statusMsg"></div>
 
         <div id="bookResult" class="book-result">
             <div id="resDetails"></div>
-            <button onclick="saveToSupabase()" style="background: #16a34a; margin-top: 10px;">✅ הוסף למדף שלי</button>
+            <button onclick="saveToSupabase()" style="background: #16a34a; margin-top: 10px; color: white; width: 100%; border: none; padding: 10px; border-radius: 8px; font-weight: bold;">✅ הוסף למדף שלי</button>
         </div>
     </div>
 
@@ -65,54 +73,56 @@
         s.innerText = text;
     }
 
-    // פונקציית החיפוש המרכזית
+    // פונקציה לניקוי שדות
+    function clearFields() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('statusMsg').style.display = 'none';
+        document.getElementById('bookResult').style.display = 'none';
+        currentBook = null;
+        if (html5QrCode) {
+            html5QrCode.stop().catch(() => {});
+        }
+    }
+
     async function searchBook(query) {
         showStatus("מחפש נתונים עבור: " + query + "...");
         try {
-            // שלב 1: חיפוש בגוגל
             let res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}`);
             let data = await res.json();
             
+            let foundCorrectBook = false;
+
             if (data.items && data.items.length > 0) {
                 const info = data.items[0].volumeInfo;
-                currentBook = {
-                    title: info.title,
-                    author: info.authors ? info.authors.join(', ') : 'לא ידוע',
-                    status: 'want_to_read'
-                };
-                displayBookResult();
-                showStatus("נמצא ספר!");
-            } else {
-                // שלב 2: אם לא נמצא בגוגל (למשל ברקוד ישראלי שלא מזוהה)
-                showStatus("המידע לא נמצא אוטומטית עבור: " + query);
-                
-                const manualTitle = prompt("הספר לא נמצא במאגר. הכניסי שם ספר לחיפוש ידני:");
-                if (manualTitle && manualTitle.trim() !== "") {
-                    // ניסיון חיפוש נוסף לפי השם שהוקלד כדי למצוא את הסופר/ת
-                    showStatus("מחפש פרטים עבור: " + manualTitle + "...");
-                    const resManual = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(manualTitle)}`);
-                    const dataManual = await resManual.json();
-                    
-                    if (dataManual.items && dataManual.items.length > 0) {
-                        const infoM = dataManual.items[0].volumeInfo;
-                        currentBook = {
-                            title: infoM.title,
-                            author: infoM.authors ? infoM.authors.join(', ') : 'לא ידוע',
-                            status: 'want_to_read'
-                        };
-                        displayBookResult();
-                        showStatus("נמצאו פרטים לפי השם!");
-                    } else {
-                        // שלב 3: הוספה ידנית מלאה (שם וסופר)
-                        const manualAuthor = prompt("גם לפי השם לא מצאנו פרטים. מי הסופר/ת?");
-                        currentBook = {
-                            title: manualTitle,
-                            author: manualAuthor || "לא ידוע",
-                            status: 'want_to_read'
-                        };
-                        displayBookResult();
-                        showStatus("הוספה ידנית מוכנה.");
-                    }
+                const foundTitle = info.title;
+                const foundAuthor = info.authors ? info.authors.join(', ') : 'לא ידוע';
+
+                if (confirm(`האם זה הספר הנכון?\n\nשם: ${foundTitle}\nסופר/ת: ${foundAuthor}`)) {
+                    currentBook = {
+                        title: foundTitle,
+                        author: foundAuthor,
+                        status: 'want_to_read'
+                    };
+                    foundCorrectBook = true;
+                    displayBookResult();
+                    showStatus("נמצא ספר!");
+                }
+            }
+
+            if (!foundCorrectBook) {
+                showStatus("ממתין להזנה ידנית...");
+                const manualTitle = prompt("לא מצאנו את הספר המדויק. מה שם הספר?");
+                if (manualTitle) {
+                    const manualAuthor = prompt(`מי הסופר/ת של "${manualTitle}"?`);
+                    currentBook = {
+                        title: manualTitle,
+                        author: manualAuthor || "לא ידוע",
+                        status: 'want_to_read'
+                    };
+                    displayBookResult();
+                    showStatus("הוספה ידנית מוכנה.");
+                } else {
+                    showStatus("החיפוש בוטל.");
                 }
             }
         } catch (e) {
@@ -138,9 +148,8 @@
         if (error) {
             showStatus("שגיאה בשמירה: " + error.message);
         } else {
-            document.getElementById('bookResult').style.display = 'none';
-            document.getElementById('searchInput').value = '';
-            showStatus("הספר נוסף בהצלחה למדף!");
+            clearFields();
+            showStatus("הספר נוסף בהצלחה!");
             loadLibrary();
         }
     }
@@ -156,7 +165,7 @@
         data.forEach(b => {
             const row = `<tr>
                 <td><b>${b.title}</b><br><span style="color:#666; font-size:12px;">${b.author}</span></td>
-                <td style="white-space:nowrap;">
+                <td>
                     <select onchange="updateStatus('${b.id}', this.value)">
                         <option value="want_to_read" ${b.status==='want_to_read'?'selected':''}>רוצה</option>
                         <option value="read" ${b.status==='read'?'selected':''}>קראתי</option>
@@ -194,7 +203,7 @@
                 html5QrCode.stop();
             }
         ).catch(err => {
-            showStatus("שגיאת מצלמה: ודאי שאישרת גישה ושהאתר רץ ב-HTTPS");
+            showStatus("שגיאת מצלמה.");
         });
     }
 
