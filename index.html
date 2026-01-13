@@ -7,17 +7,20 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: system-ui, sans-serif; background: #f8fafc; padding: 15px; direction: rtl; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; padding: 15px; direction: rtl; }
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .search-area { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
-        input { padding: 12px; width: 70%; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 10px; }
+        input { padding: 12px; width: 70%; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 10px; outline: none; }
+        input:focus { border-color: #2563eb; }
         button { background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
         #reader { width: 100%; border-radius: 10px; overflow: hidden; margin: 10px 0; background: #000; }
         .book-result { background: #dcfce7; padding: 15px; border-radius: 10px; margin: 15px 0; display: none; text-align: center; border: 2px solid #16a34a; }
-        #statusMsg { background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 14px; display: none; }
+        #statusMsg { background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 14px; display: none; color: #856404; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 10px; text-align: right; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-        h2 { font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 30px; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        h2 { font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 30px; color: #1e293b; }
+        .del-link { color: #ef4444; cursor: pointer; text-decoration: underline; font-size: 12px; }
+        select { padding: 4px; border-radius: 4px; border: 1px solid #ccc; background: white; }
     </style>
 </head>
 <body>
@@ -30,7 +33,7 @@
         <button onclick="handleSearch()">🔍 חפש לפי שם</button>
         
         <div id="reader"></div>
-        <button id="scanBtn" onclick="startScanner()" style="background: #64748b;">📷 סרוק ברקוד</button>
+        <button id="scanBtn" onclick="startScanner()" style="background: #64748b;">📷 סרוק ברקוד (ISBN)</button>
         
         <div id="statusMsg"></div>
 
@@ -48,6 +51,7 @@
 </div>
 
 <script>
+    // הגדרות Supabase
     const SUPABASE_URL = 'https://ekaoejqbczzckwfjwqqu.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrYW9lanFiY3p6Y2t3Zmp3cXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyODYwMTUsImV4cCI6MjA4Mzg2MjAxNX0.sTHbaAk35xUMcUk7a-tXXh3xypz3iKFnku23emTdxKw';    
 
@@ -63,11 +67,18 @@
     }
 
     async function searchBook(query) {
-        showStatus("מחפש בגוגל: " + query + "...");
+        showStatus("מחפש נתונים עבור: " + query + "...");
         try {
-            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
+            // ניסיון ראשון: חיפוש לפי ISBN ספציפי
+            let res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${query}`);
+            let data = await res.json();
             
+            // ניסיון שני: אם לא נמצא, חיפוש טקסט חופשי (מתאים לברקודים מקומיים)
+            if (!data.items) {
+                res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
+                data = await res.json();
+            }
+
             if (data.items && data.items.length > 0) {
                 const info = data.items[0].volumeInfo;
                 currentBook = {
@@ -75,15 +86,29 @@
                     author: info.authors ? info.authors.join(', ') : 'לא ידוע',
                     status: 'want_to_read'
                 };
-                document.getElementById('bookResult').style.display = 'block';
-                document.getElementById('resDetails').innerHTML = `<strong>${currentBook.title}</strong><br>${currentBook.author}`;
-                showStatus("הספר נמצא!");
+                displayBookResult();
+                showStatus("נמצא ספר!");
             } else {
-                showStatus("לא נמצאו תוצאות לברקוד: " + query);
+                showStatus("הברקוד " + query + " לא נמצא במאגר.");
+                // הוספה ידנית
+                const manualTitle = prompt("הספר לא נמצא. הכניסי שם ספר ידנית:");
+                if (manualTitle) {
+                    currentBook = {
+                        title: manualTitle,
+                        author: "הוספה ידנית",
+                        status: 'want_to_read'
+                    };
+                    displayBookResult();
+                }
             }
         } catch (e) {
             showStatus("שגיאת תקשורת: " + e.message);
         }
+    }
+
+    function displayBookResult() {
+        document.getElementById('bookResult').style.display = 'block';
+        document.getElementById('resDetails').innerHTML = `<strong>${currentBook.title}</strong><br>${currentBook.author}`;
     }
 
     function handleSearch() {
@@ -92,11 +117,13 @@
     }
 
     async function saveToSupabase() {
-        showStatus("שומר...");
+        if (!currentBook) return;
         const { error } = await _supabase.from('books').insert([currentBook]);
-        if (error) showStatus("שגיאת שמירה: " + error.message);
-        else {
+        if (error) {
+            showStatus("שגיאה בשמירה: " + error.message);
+        } else {
             document.getElementById('bookResult').style.display = 'none';
+            document.getElementById('searchInput').value = '';
             showStatus("נשמר בהצלחה!");
             loadLibrary();
         }
@@ -105,15 +132,22 @@
     async function loadLibrary() {
         const { data, error } = await _supabase.from('books').select('*').order('created_at', { ascending: false });
         if (error) return;
+        
         const tWant = document.querySelector('#tableWant tbody');
         const tRead = document.querySelector('#tableRead tbody');
         tWant.innerHTML = tRead.innerHTML = '';
+
         data.forEach(b => {
-            const row = `<tr><td><b>${b.title}</b><br>${b.author}</td><td>
-                <select onchange="updateStatus('${b.id}', this.value)">
-                    <option value="want_to_read" ${b.status==='want_to_read'?'selected':''}>רוצה</option>
-                    <option value="read" ${b.status==='read'?'selected':''}>קראתי</option>
-                </select><br><small onclick="deleteBook('${b.id}')" style="color:red;cursor:pointer">מחק</small></td></tr>`;
+            const row = `<tr>
+                <td><b>${b.title}</b><br><span style="color:#666">${b.author}</span></td>
+                <td>
+                    <select onchange="updateStatus('${b.id}', this.value)">
+                        <option value="want_to_read" ${b.status==='want_to_read'?'selected':''}>רוצה</option>
+                        <option value="read" ${b.status==='read'?'selected':''}>קראתי</option>
+                    </select>
+                    <br><span class="del-link" onclick="deleteBook('${b.id}')">מחק</span>
+                </td>
+            </tr>`;
             if (b.status === 'read') tRead.innerHTML += row;
             else tWant.innerHTML += row;
         });
@@ -125,7 +159,7 @@
     }
 
     async function deleteBook(id) {
-        if(confirm("למחוק?")) {
+        if(confirm("למחוק את הספר מהרשימה?")) {
             await _supabase.from('books').delete().eq('id', id);
             loadLibrary();
         }
@@ -133,8 +167,7 @@
 
     function startScanner() {
         if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-        
-        showStatus("מנסה לפתוח מצלמה...");
+        showStatus("פותח מצלמה...");
         
         html5QrCode.start(
             { facingMode: "environment" }, 
