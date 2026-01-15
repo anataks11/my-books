@@ -7,57 +7,74 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; --success: #16a34a; }
+        :root { --primary: #2563eb; --bg: #f1f5f9; --text: #1e293b; --success: #16a34a; --white: #ffffff; }
         body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); padding: 10px; direction: rtl; margin: 0; color: var(--text); }
         
-        /* כותרת ראשית של האפליקציה */
-        .app-header { text-align: center; margin: 10px 0 20px; }
-        .app-header h1 { font-size: 24px; color: var(--primary); margin: 0; }
+        .app-header { text-align: center; margin: 15px 0; }
+        .app-header h1 { font-size: 22px; color: var(--primary); margin: 0; font-weight: 800; }
 
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .container { max-width: 600px; margin: 0 auto; }
         
         /* Tabs */
-        .tabs { display: flex; background: #f1f5f9; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 10px; transition: 0.3s; color: #64748b; }
-        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .tabs { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 10px; transition: 0.3s; color: #64748b; }
+        .tab-btn.active { background: var(--white); color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Search & UI */
-        .search-area { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
+        /* Search Area */
+        .search-area { background: var(--white); padding: 15px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
         input { padding: 12px; width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; margin-bottom: 10px; box-sizing: border-box; outline: none; }
         .btn-row { display: flex; gap: 8px; }
-        button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-main { background: var(--primary); color: white; flex: 2; }
         .btn-sec { background: #e2e8f0; color: #475569; flex: 1; }
-        .btn-add { background: var(--success); color: white; padding: 6px 15px; font-size: 13px; }
+        .btn-add { background: var(--success); color: white; padding: 6px 12px; font-size: 13px; }
 
-        /* Titles & Cards */
-        h2 { font-size: 1.2rem; color: var(--text); border-right: 4px solid var(--primary); padding-right: 10px; margin: 25px 0 15px; text-align: right; display: block !important; visibility: visible !important; }
-        .item-card { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f1f5f9; }
+        /* Section Headers (Collapsible) */
+        .section-header { 
+            background: var(--white); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin-top: 10px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            cursor: pointer;
+            border-right: 5px solid var(--primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .section-header h2 { margin: 0; font-size: 16px; }
+        .count-badge { background: #e2e8f0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        .section-content { display: none; background: var(--white); margin-bottom: 10px; border-radius: 0 0 12px 12px; padding: 5px 15px; }
+        .section-content.open { display: block; border-top: 1px solid #f1f5f9; }
+
+        /* Item Cards */
+        .item-card { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+        .item-card:last-child { border-bottom: none; }
         .item-info { flex: 1; text-align: right; }
-        .item-info b { display: block; font-size: 15px; }
-        .item-info small { color: #64748b; }
-        .del-link { color: #ef4444; font-size: 11px; text-decoration: underline; cursor: pointer; display: block; margin-top: 4px; }
+        .item-info b { display: block; font-size: 14px; color: #1e293b; }
+        .item-info small { color: #64748b; font-size: 12px; }
+        .del-link { color: #ef4444; font-size: 11px; text-decoration: underline; cursor: pointer; margin-top: 4px; display: inline-block; }
         
-        .alphabet-filter { display: flex; overflow-x: auto; gap: 4px; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
-        .letter-btn { min-width: 30px; height: 30px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; font-size: 12px; cursor: pointer; }
+        .alphabet-filter { display: flex; overflow-x: auto; gap: 4px; padding: 10px 0; background: white; position: sticky; top: 0; z-index: 10; }
+        .letter-btn { min-width: 32px; height: 32px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; font-size: 12px; cursor: pointer; flex-shrink: 0; }
         .letter-btn.active { background: var(--primary); color: white; }
 
-        #reader { width: 100%; border-radius: 12px; overflow: hidden; margin: 10px 0; background: #000; }
-        select { padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; }
+        #reader { width: 100%; border-radius: 12px; overflow: hidden; margin: 10px 0; }
+        select { padding: 5px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 12px; background: #f8fafc; }
     </style>
 </head>
 <body>
 
 <div class="app-header">
-    <h1>📚 הספרייה שלי</h1>
+    <h1>📚 הספרייה והסופרים שלי</h1>
 </div>
 
 <div class="container">
     <div class="tabs">
         <div class="tab-btn active" onclick="switchTab('booksTab', this)">ספרים</div>
-        <div class="tab-btn" onclick="switchTab('authorsTab', this)">סופרים</div>
+        <div class="tab-btn" onclick="switchTab('authorsTab', this)">סופרים אהובים</div>
     </div>
 
     <div id="booksTab" class="tab-content active">
@@ -68,18 +85,28 @@
                 <button class="btn-sec" onclick="clearFields()">🧹 נקה</button>
             </div>
             <div id="reader"></div>
-            <button onclick="startScanner()" style="width:100%; background:#64748b; color:white; margin-top:10px; border-radius: 8px; padding: 10px; font-weight: bold; border:none;">📷 סריקת ברקוד</button>
+            <button onclick="startScanner()" style="width:100%; background:#64748b; color:white; margin-top:10px; border-radius: 10px; padding: 12px; border:none; font-weight: bold;">📷 סריקת ברקוד</button>
             <div id="bookResults" style="margin-top:15px; display:none; border-top: 2px dashed #e2e8f0; padding-top:10px;">
                 <div id="bookListContent"></div>
             </div>
         </div>
 
-        <h2>⏳ רוצה לקרוא</h2>
-        <div id="listWant"></div>
+        <div class="section-header" onclick="toggleSection('contentWant')">
+            <h2>⏳ רוצה לקרוא</h2>
+            <span class="count-badge" id="countWant">0</span>
+        </div>
+        <div id="contentWant" class="section-content open">
+            <div id="listWant"></div>
+        </div>
         
-        <h2>✅ קראתי</h2>
-        <div id="alphabetFilter" class="alphabet-filter"></div>
-        <div id="listRead"></div>
+        <div class="section-header" onclick="toggleSection('contentRead')">
+            <h2>✅ קראתי</h2>
+            <span class="count-badge" id="countRead">0</span>
+        </div>
+        <div id="contentRead" class="section-content">
+            <div id="alphabetFilter" class="alphabet-filter"></div>
+            <div id="listRead"></div>
+        </div>
     </div>
 
     <div id="authorsTab" class="tab-content">
@@ -90,8 +117,13 @@
                 <div id="authorListContent"></div>
             </div>
         </div>
-        <h2>✍️ הסופרים שלי</h2>
-        <div id="myAuthorsList"></div>
+        <div class="section-header" style="cursor: default;">
+            <h2>✍️ הסופרים שלי</h2>
+            <span class="count-badge" id="countAuthors">0</span>
+        </div>
+        <div class="section-content open">
+            <div id="myAuthorsList"></div>
+        </div>
     </div>
 </div>
 
@@ -101,6 +133,12 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let allBooks = [], allAuthors = [], currentFilterLetter = 'הכל', html5QrCode = null;
+
+    // פונקציית פתיחה/סגירה של רשימות
+    function toggleSection(id) {
+        const content = document.getElementById(id);
+        content.classList.toggle('open');
+    }
 
     function switchTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -139,7 +177,7 @@
     async function addAuthorToDB(authorName) {
         if (allAuthors.find(a => a.name === authorName)) return alert("הסופר כבר ברשימה");
         const { error } = await _supabase.from('authors').insert([{ name: authorName }]);
-        if (error) alert("שגיאה בשמירה: " + error.message);
+        if (error) alert("שגיאה: " + error.message);
         else {
             document.getElementById('authorResults').style.display = 'none';
             document.getElementById('authorSearchInput').value = '';
@@ -150,6 +188,7 @@
     async function loadAuthors() {
         const { data } = await _supabase.from('authors').select('*').order('name');
         allAuthors = data || [];
+        document.getElementById('countAuthors').innerText = allAuthors.length;
         document.getElementById('myAuthorsList').innerHTML = allAuthors.map(a => `
             <div class="item-card">
                 <div class="item-info"><b>${a.name}</b></div>
@@ -211,6 +250,8 @@
         const readDiv = document.getElementById('listRead');
         wantDiv.innerHTML = readDiv.innerHTML = '';
 
+        let countW = 0, countR = 0;
+
         sorted.forEach(b => {
             const html = `<div class="item-card">
                 <div class="item-info">
@@ -225,9 +266,16 @@
             </div>`;
             
             if (b.status === 'read') {
+                countR++;
                 if (currentFilterLetter === 'הכל' || b.title.startsWith(currentFilterLetter)) readDiv.innerHTML += html;
-            } else { wantDiv.innerHTML += html; }
+            } else { 
+                countW++;
+                wantDiv.innerHTML += html; 
+            }
         });
+
+        document.getElementById('countWant').innerText = countW;
+        document.getElementById('countRead').innerText = countR;
     }
 
     function renderAlphabetMenu() {
@@ -246,7 +294,6 @@
         document.getElementById('authorSearchInput').value = '';
         document.getElementById('bookResults').style.display = 'none';
         document.getElementById('authorResults').style.display = 'none';
-        if (html5QrCode) html5QrCode.stop().catch(() => {});
     }
 
     function startScanner() {
@@ -262,4 +309,3 @@
 </script>
 </body>
 </html>
-
