@@ -15,7 +15,7 @@
 
         .container { max-width: 600px; margin: 0 auto; }
         
-        /* Tabs Navigation */
+        /* Tabs */
         .tabs { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; margin-bottom: 15px; }
         .tab-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 10px; transition: 0.3s; color: #64748b; }
         .tab-btn.active { background: var(--white); color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -31,7 +31,7 @@
         .btn-sec { background: #e2e8f0; color: #475569; flex: 1; }
         .btn-add { background: var(--success); color: white; padding: 6px 12px; font-size: 13px; }
 
-        /* Section Headers with Icon */
+        /* Section Headers */
         .section-header { 
             background: var(--white); 
             padding: 12px 15px; 
@@ -46,8 +46,14 @@
         }
         .header-title-wrapper { display: flex; align-items: center; gap: 10px; }
         .section-header h2 { margin: 0; font-size: 16px; }
-        .category-icon { width: 30px; height: 30px; object-fit: contain; }
         
+        /* האייקון החדש של רוצה לקרוא */
+        .magnify-book-icon {
+            width: 28px;
+            height: 28px;
+            color: var(--primary);
+        }
+
         .count-badge { background: #e2e8f0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
         .section-content { display: none; background: var(--white); margin-bottom: 10px; border-radius: 0 0 12px 12px; padding: 5px 15px; }
         .section-content.open { display: block; border-top: 1px solid #f1f5f9; }
@@ -96,7 +102,12 @@
 
         <div class="section-header" onclick="toggleSection('contentWant')">
             <div class="header-title-wrapper">
-                <img src="https://img.lovepik.com/element/45000/2841.png_860.png" alt="icon" class="category-icon">
+                <svg class="magnify-book-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    <circle cx="14" cy="10" r="3"></circle>
+                    <line x1="16" y1="12" x2="19" y2="15"></line>
+                </svg>
                 <h2>רוצה לקרוא</h2>
             </div>
             <span class="count-badge" id="countWant">0</span>
@@ -107,7 +118,8 @@
         
         <div class="section-header" onclick="toggleSection('contentRead')">
             <div class="header-title-wrapper">
-                <h2>✅ קראתי</h2>
+                <span style="font-size: 20px;">✅</span>
+                <h2>קראתי</h2>
             </div>
             <span class="count-badge" id="countRead">0</span>
         </div>
@@ -126,7 +138,10 @@
             </div>
         </div>
         <div class="section-header" style="cursor: default;">
-            <h2>✍️ הסופרים שלי</h2>
+            <div class="header-title-wrapper">
+                <span style="font-size: 20px;">✍️</span>
+                <h2>הסופרים שלי</h2>
+            </div>
             <span class="count-badge" id="countAuthors">0</span>
         </div>
         <div class="section-content open">
@@ -274,7 +289,7 @@
             
             if (b.status === 'read') {
                 countR++;
-                if (currentFilterLetter === 'הכל' || b.title.startsWith(currentFilterLetter)) readDiv.innerHTML += html;
+                if (currentFilterLetter === 'הכל' || (b.title && b.title.startsWith(currentFilterLetter))) readDiv.innerHTML += html;
             } else { 
                 countW++;
                 wantDiv.innerHTML += html; 
