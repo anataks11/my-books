@@ -7,43 +7,54 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; padding: 15px; direction: rtl; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .search-area { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; padding: 10px; direction: rtl; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .search-area { background: #f1f5f9; padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
         input { padding: 12px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 10px; outline: none; box-sizing: border-box; }
-        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        .btn-group { display: flex; gap: 8px; margin-bottom: 10px; }
+        button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
         .btn-search { background: #2563eb; color: white; }
         .btn-clear { background: #e2e8f0; color: #475569; }
         .btn-scan { background: #64748b; color: white; width: 100%; margin-top: 5px; }
         #reader { width: 100%; border-radius: 10px; overflow: hidden; margin: 10px 0; background: #000; }
         
-        .results-list { margin: 15px 0; display: none; text-align: right; }
-        .result-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; }
-        
-        /* עיצוב תפריט האותיות */
+        /* עיצוב משופר וקומפקטי לתפריט האותיות */
         .alphabet-filter { 
             display: flex; 
             overflow-x: auto; 
-            gap: 8px; 
-            padding: 10px 0; 
+            gap: 5px; 
+            padding: 8px 5px; 
             margin-bottom: 15px; 
             white-space: nowrap; 
             -webkit-overflow-scrolling: touch; 
-            border-bottom: 1px solid #eee; 
-            scrollbar-width: none; /* מסתיר סרגל גלילה בדפדפנים מודרניים */
+            border-bottom: 2px solid #f1f5f9;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
-        .alphabet-filter::-webkit-scrollbar { display: none; } /* מסתיר סרגל גלילה ב-Safari/Chrome */
+        .alphabet-filter::-webkit-scrollbar { height: 3px; }
+        .alphabet-filter::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        .letter-btn { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 14px; min-width: 35px; }
-        .letter-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+        .letter-btn { 
+            background: #f8fafc; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 4px; 
+            padding: 4px 8px; 
+            cursor: pointer; 
+            font-size: 13px; 
+            min-width: 28px;
+            color: #475569;
+            transition: 0.2s;
+        }
+        .letter-btn.active { background: #2563eb; color: white; border-color: #2563eb; font-weight: bold; }
 
-        #statusMsg { background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 14px; display: none; color: #856404; font-weight: 500; }
+        #statusMsg { background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 13px; display: none; color: #856404; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-        h2 { font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 30px; color: #1e293b; }
-        .del-link { color: #ef4444; cursor: pointer; text-decoration: underline; font-size: 11px; margin-top: 5px; display: inline-block; }
-        select { padding: 6px; border-radius: 6px; border: 1px solid #ccc; background: white; font-size: 13px; }
+        th, td { padding: 10px 5px; text-align: right; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        h2 { font-size: 17px; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 25px; color: #1e293b; }
+        .del-link { color: #ef4444; cursor: pointer; text-decoration: underline; font-size: 11px; margin-top: 4px; display: inline-block; }
+        select { padding: 4px; border-radius: 6px; border: 1px solid #ccc; background: white; font-size: 12px; max-width: 80px; }
     </style>
 </head>
 <body>
@@ -60,10 +71,10 @@
         <div id="reader"></div>
         <button id="scanBtn" class="btn-scan" onclick="startScanner()">📷 סרוק ברקוד</button>
         <div id="statusMsg"></div>
-        <div id="resultsList" class="results-list">
-            <p style="font-weight: bold; font-size: 14px; margin-bottom: 10px;">בחר/י את הספר המדויק:</p>
+        <div id="resultsList" style="display:none; text-align:right; margin: 15px 0;">
+            <p style="font-weight: bold; font-size: 13px;">בחרי ספר:</p>
             <div id="listContent"></div>
-            <button onclick="manualEntry()" style="background: #94a3b8; color: white; width: 100%; margin-top: 10px; padding: 10px; border-radius: 8px; border: none; font-weight: bold;">לא מצאתי? הוספה ידנית</button>
+            <button onclick="manualEntry()" style="background: #94a3b8; color: white; width: 100%; margin-top: 8px; padding: 8px; border-radius: 8px; border: none; font-size:13px;">הוספה ידנית</button>
         </div>
     </div>
 
@@ -76,7 +87,6 @@
 </div>
 
 <script>
-    // הגדרות Supabase המעודכנות שלך
     const SUPABASE_URL = 'https://ekaoejqbczzckwfjwqqu.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrYW9lanFiY3p6Y2t3Zmp3cXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyODYwMTUsImV4cCI6MjA4Mzg2MjAxNX0.sTHbaAk35xUMcUk7a-tXXh3xypz3iKFnku23emTdxKw';
 
@@ -99,7 +109,6 @@
         if (html5QrCode) html5QrCode.stop().catch(() => {});
     }
 
-    // יצירת תפריט אותיות נגלל
     function renderAlphabetMenu() {
         const letters = ['הכל', ...'אבגדהוזחטיכלמנסעפצקרשת'.split('')];
         const menu = document.getElementById('alphabetFilter');
@@ -115,56 +124,31 @@
     }
 
     async function searchBook(query) {
-        showStatus("מחפש תוצאות...");
-        document.getElementById('resultsList').style.display = 'none';
+        showStatus("מחפש...");
         try {
             const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&langRestrict=he`);
             const data = await res.json();
-            if (data.items && data.items.length > 0) {
-                displayResults(data.items);
-                showStatus("בחר/י ספר מהרשימה:");
-            } else {
-                showStatus("לא נמצאו תוצאות. נסי הוספה ידנית.");
-                manualEntry();
-            }
-        } catch (e) { showStatus("שגיאת תקשורת."); }
-    }
-
-    function displayResults(items) {
-        const listDiv = document.getElementById('resultsList');
-        const content = document.getElementById('listContent');
-        content.innerHTML = '';
-        listDiv.style.display = 'block';
-        items.forEach(item => {
-            const info = item.volumeInfo;
-            const title = info.title;
-            const author = info.authors ? info.authors.join(', ') : 'לא ידוע';
-            const div = document.createElement('div');
-            div.className = 'result-item';
-            div.innerHTML = `<strong>${title}</strong><span>${author}</span>`;
-            div.onclick = () => saveToSupabase(title, author);
-            content.appendChild(div);
-        });
-        listDiv.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    async function manualEntry() {
-        const title = prompt("שם הספר?");
-        if (title) {
-            const author = prompt(`מי הסופר/ת של "${title}"?`);
-            await saveToSupabase(title, author || "לא ידוע");
-        }
-    }
-
-    function handleSearch() {
-        const q = document.getElementById('searchInput').value;
-        if(q) searchBook(q);
+            if (data.items) {
+                const listDiv = document.getElementById('resultsList');
+                const content = document.getElementById('listContent');
+                content.innerHTML = '';
+                listDiv.style.display = 'block';
+                data.items.forEach(item => {
+                    const info = item.volumeInfo;
+                    const div = document.createElement('div');
+                    div.style = "background:#fff; border:1px solid #ddd; padding:8px; margin-bottom:5px; border-radius:6px; cursor:pointer; font-size:13px;";
+                    div.innerHTML = `<strong>${info.title}</strong><br><span style="color:gray">${info.authors ? info.authors.join(', ') : 'לא ידוע'}</span>`;
+                    div.onclick = () => saveToSupabase(info.title, info.authors ? info.authors.join(', ') : 'לא ידוע');
+                    content.appendChild(div);
+                });
+                showStatus("");
+            } else { manualEntry(); }
+        } catch (e) { showStatus("שגיאה בחיפוש."); }
     }
 
     async function saveToSupabase(title, author) {
         const { error } = await _supabase.from('books').insert([{ title, author, status: 'want_to_read' }]);
-        if (error) showStatus("שגיאה בשמירה: " + error.message);
-        else { clearFields(); loadLibrary(); showStatus("הספר נוסף!"); }
+        if (!error) { clearFields(); loadLibrary(); }
     }
 
     async function loadLibrary() {
@@ -177,17 +161,15 @@
     }
 
     function displayLibrary() {
-        // מיון אלפביתי של כל הספרים
         const sorted = [...allBooks].sort((a, b) => a.title.localeCompare(b.title, 'he'));
-        
         const tWant = document.querySelector('#tableWant tbody');
         const tRead = document.querySelector('#tableRead tbody');
         tWant.innerHTML = tRead.innerHTML = '';
 
         sorted.forEach(b => {
             const row = `<tr>
-                <td><b>${b.title}</b><br><span style="color:#666; font-size:12px;">${b.author}</span></td>
-                <td>
+                <td style="width:70%"><b>${b.title}</b><br><small style="color:#666">${b.author}</small></td>
+                <td style="text-align:left">
                     <select onchange="updateStatus('${b.id}', this.value)">
                         <option value="want_to_read" ${b.status==='want_to_read'?'selected':''}>רוצה</option>
                         <option value="read" ${b.status==='read'?'selected':''}>קראתי</option>
@@ -200,9 +182,7 @@
                 if (currentFilterLetter === 'הכל' || b.title.startsWith(currentFilterLetter)) {
                     tRead.innerHTML += row;
                 }
-            } else {
-                tWant.innerHTML += row;
-            }
+            } else { tWant.innerHTML += row; }
         });
     }
 
@@ -212,7 +192,7 @@
     }
 
     async function deleteBook(id) {
-        if(confirm("למחוק את הספר?")) {
+        if(confirm("למחוק?")) {
             await _supabase.from('books').delete().eq('id', id);
             loadLibrary();
         }
@@ -220,11 +200,23 @@
 
     function startScanner() {
         if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-        showStatus("פותח מצלמה...");
         html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
             searchBook(txt);
             html5QrCode.stop();
         }).catch(() => showStatus("שגיאת מצלמה."));
+    }
+
+    async function manualEntry() {
+        const title = prompt("שם הספר?");
+        if (title) {
+            const author = prompt(`סופר/ת?`);
+            await saveToSupabase(title, author || "לא ידוע");
+        }
+    }
+
+    function handleSearch() {
+        const q = document.getElementById('searchInput').value;
+        if(q) searchBook(q);
     }
 
     loadLibrary();
