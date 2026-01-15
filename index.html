@@ -15,14 +15,12 @@
 
         .container { max-width: 600px; margin: 0 auto; }
         
-        /* Tabs */
         .tabs { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; margin-bottom: 15px; }
         .tab-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 10px; transition: 0.3s; color: #64748b; }
         .tab-btn.active { background: var(--white); color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Search Area */
         .search-area { background: var(--white); padding: 15px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
         input { padding: 12px; width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; margin-bottom: 10px; box-sizing: border-box; outline: none; }
         .btn-row { display: flex; gap: 8px; }
@@ -31,7 +29,6 @@
         .btn-sec { background: #e2e8f0; color: #475569; flex: 1; }
         .btn-add { background: var(--success); color: white; padding: 6px 12px; font-size: 13px; }
 
-        /* Section Headers */
         .section-header { 
             background: var(--white); 
             padding: 12px 15px; 
@@ -47,26 +44,21 @@
         .header-title-wrapper { display: flex; align-items: center; gap: 10px; }
         .section-header h2 { margin: 0; font-size: 16px; }
         
-        /* האייקון החדש של רוצה לקרוא */
-        .magnify-book-icon {
-            width: 28px;
-            height: 28px;
-            color: var(--primary);
-        }
+        /* האייקון שבחרת (אופציה 1) */
+        .magnify-book-icon { width: 26px; height: 26px; color: var(--primary); flex-shrink: 0; }
 
         .count-badge { background: #e2e8f0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
         .section-content { display: none; background: var(--white); margin-bottom: 10px; border-radius: 0 0 12px 12px; padding: 5px 15px; }
         .section-content.open { display: block; border-top: 1px solid #f1f5f9; }
 
-        /* Item Cards */
         .item-card { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
-        .item-card:last-child { border-bottom: none; }
         .item-info { flex: 1; text-align: right; }
         .item-info b { display: block; font-size: 14px; color: #1e293b; }
         .item-info small { color: #64748b; font-size: 12px; }
         .del-link { color: #ef4444; font-size: 11px; text-decoration: underline; cursor: pointer; margin-top: 4px; display: inline-block; }
         
-        .alphabet-filter { display: flex; overflow-x: auto; gap: 4px; padding: 10px 0; background: white; position: sticky; top: 0; z-index: 10; }
+        .alphabet-filter { display: flex; overflow-x: auto; gap: 4px; padding: 10px 0; background: white; position: sticky; top: 0; z-index: 10; scrollbar-width: none; }
+        .alphabet-filter::-webkit-scrollbar { display: none; }
         .letter-btn { min-width: 32px; height: 32px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; font-size: 12px; cursor: pointer; flex-shrink: 0; }
         .letter-btn.active { background: var(--primary); color: white; }
 
@@ -103,10 +95,10 @@
         <div class="section-header" onclick="toggleSection('contentWant')">
             <div class="header-title-wrapper">
                 <svg class="magnify-book-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                    <circle cx="14" cy="10" r="3"></circle>
-                    <line x1="16" y1="12" x2="19" y2="15"></line>
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="8" y1="9" x2="14" y2="9"></line>
+                    <line x1="8" y1="13" x2="14" y2="13"></line>
                 </svg>
                 <h2>רוצה לקרוא</h2>
             </div>
@@ -158,8 +150,7 @@
     let allBooks = [], allAuthors = [], currentFilterLetter = 'הכל', html5QrCode = null;
 
     function toggleSection(id) {
-        const content = document.getElementById(id);
-        content.classList.toggle('open');
+        document.getElementById(id).classList.toggle('open');
     }
 
     function switchTab(tabId, btn) {
