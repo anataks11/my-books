@@ -20,14 +20,14 @@
         
         /* פילטר סופרים */
         .author-filter-box { position: relative; margin: 15px 0 5px; }
-        .author-input { padding: 8px; width: 100%; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .author-input { padding: 8px; width: 100%; border: 2px solid #3b82f6; border-radius: 6px; font-size: 14px; }
         .suggestions { 
             position: absolute; top: 100%; left: 0; right: 0; 
             background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px;
-            z-index: 100; max-height: 150px; overflow-y: auto; display: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 100; max-height: 200px; overflow-y: auto; display: none;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
         }
-        .suggestion-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #f1f1f1; font-size: 13px; }
+        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f1f1; font-size: 13px; display: flex; justify-content: space-between; }
         .suggestion-item:hover { background: #f0f7ff; }
 
         .alphabet-filter { 
@@ -70,9 +70,9 @@
     <h2>✅ קראתי</h2>
     
     <div class="author-filter-box">
-        <input type="text" id="authorSearch" class="author-input" placeholder="חפשי לפי שם סופר/ת..." oninput="handleAuthorInput(this.value)">
+        <input type="text" id="authorSearch" class="author-input" placeholder="חפשי סופר/ת (עובד גם בעברית וגם באנגלית)..." oninput="handleAuthorInput(this.value)">
         <div id="authorSuggestions" class="suggestions"></div>
-        <button onclick="clearAuthorFilter()" id="clearAuthorBtn" style="display:none; background:none; color:#2563eb; font-size:12px; text-decoration:underline; border:none; padding:5px; width:auto; margin-top:0;">הצג את כל הסופרים</button>
+        <button onclick="clearAuthorFilter()" id="clearAuthorBtn" style="display:none; background:none; color:#2563eb; font-size:12px; text-decoration:underline; border:none; padding:5px; width:auto; margin-top:0;">הצג הכל</button>
     </div>
 
     <div id="alphabetFilter" class="alphabet-filter"></div>
@@ -89,36 +89,36 @@
     let currentFilterLetter = 'הכל';
     let currentAuthorFilter = '';
 
-    function renderAlphabetMenu() {
-        const letters = ['הכל', ...'אבגדהוזחטיכלמנסעפצקרשת'.split('')];
-        const menu = document.getElementById('alphabetFilter');
-        menu.innerHTML = letters.map(l => 
-            `<button class="letter-btn ${currentFilterLetter === l ? 'active' : ''}" onclick="setFilter('${l}')">${l}</button>`
-        ).join('');
+    // פונקציית עזר להמרת עברית לאותיות לטיניות בסיסיות לחיפוש
+    function hebrewToLatin(str) {
+        const map = {
+            'א':'a','ב':'b','ג':'g','ד':'d','ה':'h','ו':'v','ז':'z','ח':'kh','ט':'t','י':'y','כ':'k','ל':'l','מ':'m','נ':'n','ס':'s','ע':'a','פ':'p','צ':'ts','ק':'k','ר':'r','ש':'sh','ת':'t','ך':'k','ם':'m','ן':'n','ף':'f','ץ':'ts'
+        };
+        return str.split('').map(char => map[char] || char).join('').toLowerCase();
     }
 
-    function setFilter(letter) {
-        currentFilterLetter = letter;
-        currentAuthorFilter = ''; // איפוס פילטר סופר כשלוחצים על אות
-        document.getElementById('authorSearch').value = '';
-        document.getElementById('clearAuthorBtn').style.display = 'none';
-        renderAlphabetMenu();
-        displayLibrary();
-    }
-
-    // לוגיקת פילטר סופרים
     function handleAuthorInput(val) {
         const suggestions = document.getElementById('authorSuggestions');
-        if (val.length < 3) {
+        if (val.length < 2) {
             suggestions.style.display = 'none';
             return;
         }
 
+        const searchVal = val.toLowerCase();
+        const searchLatin = hebrewToLatin(searchVal);
+
+        // שליפת סופרים ייחודיים מרשימת ה"קראתי"
         const authors = [...new Set(allBooks.filter(b => b.status === 'read').map(b => b.author))];
-        const filtered = authors.filter(a => a.includes(val));
+        
+        const filtered = authors.filter(author => {
+            const authorLower = author.toLowerCase();
+            const authorLatin = hebrewToLatin(authorLower);
+            // בדיקה אם החיפוש מתאים למקור או לתרגום הלטיני
+            return authorLower.includes(searchVal) || authorLatin.includes(searchLatin);
+        });
 
         if (filtered.length > 0) {
-            suggestions.innerHTML = filtered.map(a => `<div class="suggestion-item" onclick="applyAuthorFilter('${a}')">${a}</div>`).join('');
+            suggestions.innerHTML = filtered.map(a => `<div class="suggestion-item" onclick="applyAuthorFilter('${a.replace(/'/g, "\\'")}')">${a}</div>`).join('');
             suggestions.style.display = 'block';
         } else {
             suggestions.style.display = 'none';
@@ -127,7 +127,7 @@
 
     function applyAuthorFilter(author) {
         currentAuthorFilter = author;
-        currentFilterLetter = ''; // איפוס פילטר אותיות
+        currentFilterLetter = '';
         document.getElementById('authorSearch').value = author;
         document.getElementById('authorSuggestions').style.display = 'none';
         document.getElementById('clearAuthorBtn').style.display = 'inline-block';
@@ -139,12 +139,29 @@
         currentAuthorFilter = '';
         currentFilterLetter = 'הכל';
         document.getElementById('authorSearch').value = '';
+        document.getElementById('authorSuggestions').style.display = 'none';
         document.getElementById('clearAuthorBtn').style.display = 'none';
         renderAlphabetMenu();
         displayLibrary();
     }
 
-    // פונקציות ליבה
+    function renderAlphabetMenu() {
+        const letters = ['הכל', ...'אבגדהוזחטיכלמנסעפצקרשת'.split('')];
+        const menu = document.getElementById('alphabetFilter');
+        menu.innerHTML = letters.map(l => 
+            `<button class="letter-btn ${currentFilterLetter === l ? 'active' : ''}" onclick="setFilter('${l}')">${l}</button>`
+        ).join('');
+    }
+
+    function setFilter(letter) {
+        currentFilterLetter = letter;
+        currentAuthorFilter = '';
+        document.getElementById('authorSearch').value = '';
+        document.getElementById('clearAuthorBtn').style.display = 'none';
+        renderAlphabetMenu();
+        displayLibrary();
+    }
+
     async function loadLibrary() {
         const { data, error } = await _supabase.from('books').select('*');
         if (!error) { allBooks = data; displayLibrary(); renderAlphabetMenu(); }
@@ -172,7 +189,7 @@
                 let show = false;
                 if (currentAuthorFilter) {
                     if (b.author === currentAuthorFilter) show = true;
-                } else if (currentFilterLetter === 'הכל' || b.title.startsWith(currentFilterLetter)) {
+                } else if (currentFilterLetter === 'הכל' || (b.title && b.title.startsWith(currentFilterLetter))) {
                     show = true;
                 }
                 if (show) tRead.innerHTML += row;
