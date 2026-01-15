@@ -44,8 +44,8 @@
         .header-title-wrapper { display: flex; align-items: center; gap: 10px; }
         .section-header h2 { margin: 0; font-size: 16px; }
         
-        /* האייקון שבחרת (אופציה 1) */
-        .magnify-book-icon { width: 26px; height: 26px; color: var(--primary); flex-shrink: 0; }
+        /* האייקון המשופר - ספר וזכוכית מגדלת */
+        .magnify-book-icon { width: 28px; height: 28px; color: var(--primary); flex-shrink: 0; }
 
         .count-badge { background: #e2e8f0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
         .section-content { display: none; background: var(--white); margin-bottom: 10px; border-radius: 0 0 12px 12px; padding: 5px 15px; }
@@ -95,10 +95,10 @@
         <div class="section-header" onclick="toggleSection('contentWant')">
             <div class="header-title-wrapper">
                 <svg class="magnify-book-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    <line x1="8" y1="9" x2="14" y2="9"></line>
-                    <line x1="8" y1="13" x2="14" y2="13"></line>
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    <circle cx="15" cy="10" r="3.5"></circle>
+                    <line x1="17.5" y1="12.5" x2="21" y2="16"></line>
                 </svg>
                 <h2>רוצה לקרוא</h2>
             </div>
