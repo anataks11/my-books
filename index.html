@@ -11,13 +11,13 @@
         body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); padding: 10px; direction: rtl; margin: 0; color: var(--text); }
         
         .app-header { text-align: center; margin: 15px 0; }
-        .app-header h1 { font-size: 22px; color: var(--primary); margin: 0; font-weight: 800; }
+        .app-header h1 { font-size: 24px; color: var(--primary); margin: 0; font-weight: 800; }
 
         .container { max-width: 600px; margin: 0 auto; }
         
-        /* Tabs */
+        /* Tabs Navigation */
         .tabs { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 10px; transition: 0.3s; color: #64748b; }
+        .tab-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; border-radius: 10px; transition: 0.3s; color: #64748b; }
         .tab-btn.active { background: var(--white); color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -31,10 +31,10 @@
         .btn-sec { background: #e2e8f0; color: #475569; flex: 1; }
         .btn-add { background: var(--success); color: white; padding: 6px 12px; font-size: 13px; }
 
-        /* Section Headers (Collapsible) */
+        /* Section Headers with Icon */
         .section-header { 
             background: var(--white); 
-            padding: 15px; 
+            padding: 12px 15px; 
             border-radius: 12px; 
             margin-top: 10px; 
             display: flex; 
@@ -44,7 +44,10 @@
             border-right: 5px solid var(--primary);
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
+        .header-title-wrapper { display: flex; align-items: center; gap: 10px; }
         .section-header h2 { margin: 0; font-size: 16px; }
+        .category-icon { width: 30px; height: 30px; object-fit: contain; }
+        
         .count-badge { background: #e2e8f0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
         .section-content { display: none; background: var(--white); margin-bottom: 10px; border-radius: 0 0 12px 12px; padding: 5px 15px; }
         .section-content.open { display: block; border-top: 1px solid #f1f5f9; }
@@ -68,7 +71,7 @@
 <body>
 
 <div class="app-header">
-    <h1>📚 הספרייה שלי</h1>
+    <h1>📖 הספרייה שלי</h1>
 </div>
 
 <div class="container">
@@ -92,7 +95,10 @@
         </div>
 
         <div class="section-header" onclick="toggleSection('contentWant')">
-            <h2>⏳ רוצה לקרוא</h2>
+            <div class="header-title-wrapper">
+                <img src="https://img.lovepik.com/element/45000/2841.png_860.png" alt="icon" class="category-icon">
+                <h2>רוצה לקרוא</h2>
+            </div>
             <span class="count-badge" id="countWant">0</span>
         </div>
         <div id="contentWant" class="section-content open">
@@ -100,7 +106,9 @@
         </div>
         
         <div class="section-header" onclick="toggleSection('contentRead')">
-            <h2>✅ קראתי</h2>
+            <div class="header-title-wrapper">
+                <h2>✅ קראתי</h2>
+            </div>
             <span class="count-badge" id="countRead">0</span>
         </div>
         <div id="contentRead" class="section-content">
@@ -134,7 +142,6 @@
 
     let allBooks = [], allAuthors = [], currentFilterLetter = 'הכל', html5QrCode = null;
 
-    // פונקציית פתיחה/סגירה של רשימות
     function toggleSection(id) {
         const content = document.getElementById(id);
         content.classList.toggle('open');
@@ -309,4 +316,3 @@
 </script>
 </body>
 </html>
-
