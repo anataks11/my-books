@@ -91,7 +91,7 @@
         s.style.display = 'block';
         s.innerText = text;
     }
-//ניקוי שדות החיפוש
+
     function clearFields() {
         document.getElementById('searchInput').value = '';
         document.getElementById('statusMsg').style.display = 'none';
@@ -114,7 +114,6 @@
         displayLibrary();
     }
 
-    //פונקציה לחיפוש אחר ספר במאגר של גוגל ספרים
     async function searchBook(query) {
         showStatus("מחפש תוצאות...");
         document.getElementById('resultsList').style.display = 'none';
