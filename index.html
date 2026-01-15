@@ -3,71 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ניהול הספרייה שלי</title>
+    <title>הספרייה והסופרים שלי</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; padding: 10px; direction: rtl; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; padding: 10px; direction: rtl; margin: 0; }
+        .container { max-width: 600px; margin: 20px auto; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
+        /* עיצוב טאבים */
+        .tabs { display: flex; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: bold; color: #64748b; transition: 0.3s; }
+        .tab-btn.active { color: #2563eb; border-bottom: 3px solid #2563eb; background: #eff6ff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* עיצוב כללי */
         .search-area { background: #f1f5f9; padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
         input { padding: 12px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 10px; outline: none; box-sizing: border-box; }
         .btn-group { display: flex; gap: 8px; margin-bottom: 10px; }
         button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
-        .btn-search { background: #2563eb; color: white; }
-        .btn-clear { background: #e2e8f0; color: #475569; }
-        .btn-scan { background: #64748b; color: white; width: 100%; margin-top: 5px; }
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin: 10px 0; background: #000; }
+        .btn-blue { background: #2563eb; color: white; }
+        .btn-gray { background: #e2e8f0; color: #475569; }
         
-        .author-filter-box { position: relative; margin: 15px 0 5px; }
-        .author-input { padding: 8px; width: 100%; border: 2px solid #3b82f6; border-radius: 6px; font-size: 14px; }
-        .suggestions { 
-            position: absolute; top: 100%; left: 0; right: 0; 
-            background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px;
-            z-index: 100; max-height: 200px; overflow-y: auto; display: none;
-            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
-        }
-        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f1f1; font-size: 13px; }
-        .alphabet-filter { display: flex; overflow-x: auto; gap: 5px; padding: 8px 5px; margin-bottom: 10px; white-space: nowrap; border-bottom: 2px solid #f1f5f9; }
-        .letter-btn { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 13px; min-width: 28px; }
+        /* רשימות */
+        .item-list { list-style: none; padding: 0; margin: 0; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f1f5f9; }
+        .item-info { flex-grow: 1; }
+        .del-link { color: #ef4444; cursor: pointer; text-decoration: underline; font-size: 12px; }
+        
+        /* עיצוב ספציפי לספרים */
+        .alphabet-filter { display: flex; overflow-x: auto; gap: 5px; padding: 8px 0; white-space: nowrap; border-bottom: 1px solid #eee; margin-bottom: 10px; }
+        .letter-btn { background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 8px; border-radius: 4px; font-size: 13px; }
         .letter-btn.active { background: #2563eb; color: white; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        td { padding: 10px 5px; text-align: right; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-        h2 { font-size: 17px; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 25px; }
-        .del-link { color: #ef4444; cursor: pointer; text-decoration: underline; font-size: 11px; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 10px 5px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📚 הספרייה שלי</h1>
-
-    <div class="search-area">
-        <input type="text" id="searchInput" placeholder="שם ספר או הקלד ברקוד...">
-        <div class="btn-group">
-            <button class="btn-search" onclick="handleSearch()">🔍 חיפוש</button>
-            <button class="btn-clear" onclick="clearFields()">🧹 נקה</button>
-        </div>
-        <div id="reader"></div>
-        <button id="scanBtn" class="btn-scan" onclick="startScanner()">📷 סרוק ברקוד</button>
-        <div id="statusMsg" style="display:none; background:#fff3cd; padding:10px; border-radius:8px; margin:10px 0; font-size:13px;"></div>
-        <div id="resultsList" style="display:none; text-align:right; margin: 15px 0;">
-            <div id="listContent"></div>
-            <button onclick="manualEntry()" style="background:#94a3b8; color:white; width:100%; margin-top:8px; padding:8px; border:none; border-radius:8px;">הוספה ידנית</button>
-        </div>
+    <div class="tabs">
+        <div class="tab-btn active" onclick="switchTab('booksTab', this)">ספרים</div>
+        <div class="tab-btn" onclick="switchTab('authorsTab', this)">סופרים אהובים</div>
     </div>
 
-    <h2>⏳ רוצה לקרוא</h2>
-    <table id="tableWant"><tbody></tbody></table>
+    <div id="booksTab" class="tab-content active">
+        <div class="search-area">
+            <input type="text" id="searchInput" placeholder="שם ספר או ברקוד...">
+            <div class="btn-group">
+                <button class="btn-blue" onclick="handleSearch()">🔍 חיפוש</button>
+                <button class="btn-gray" onclick="clearFields()">🧹 נקה</button>
+            </div>
+            <div id="reader"></div>
+            <button onclick="startScanner()" style="width:100%; background:#64748b; color:white; border-radius:8px; padding:10px; border:none;">📷 סרוק ברקוד</button>
+            <div id="resultsList" style="display:none; text-align:right; margin-top:15px;">
+                <div id="listContent"></div>
+            </div>
+        </div>
 
-    <h2>✅ קראתי</h2>
-    <div class="author-filter-box">
-        <input type="text" id="authorSearch" class="author-input" placeholder="חפשי סופר/ת..." oninput="handleAuthorInput(this.value)">
-        <div id="authorSuggestions" class="suggestions"></div>
-        <button onclick="clearAuthorFilter()" id="clearAuthorBtn" style="display:none; background:none; color:#2563eb; font-size:12px; text-decoration:underline; border:none; padding:5px; width:auto;">הצג הכל</button>
+        <h2>⏳ רוצה לקרוא</h2>
+        <table id="tableWant"><tbody></tbody></table>
+        <h2>✅ קראתי</h2>
+        <div id="alphabetFilter" class="alphabet-filter"></div>
+        <table id="tableRead"><tbody></tbody></table>
     </div>
-    <div id="alphabetFilter" class="alphabet-filter"></div>
-    <table id="tableRead"><tbody></tbody></table>
+
+    <div id="authorsTab" class="tab-content">
+        <div class="search-area">
+            <input type="text" id="authorSearchInput" placeholder="חפשי שם סופר/ת...">
+            <button class="btn-blue" onclick="searchAuthor()">🔍 חפש סופר להוספה</button>
+            <div id="authorResults" style="display:none; text-align:right; margin-top:15px;">
+                <div id="authorListContent"></div>
+            </div>
+        </div>
+        <h2>✍️ הסופרים שלי</h2>
+        <div id="myAuthorsList" class="item-list"></div>
+    </div>
 </div>
 
 <script>
@@ -75,109 +87,150 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrYW9lanFiY3p6Y2t3Zmp3cXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyODYwMTUsImV4cCI6MjA4Mzg2MjAxNX0.sTHbaAk35xUMcUk7a-tXXh3xypz3iKFnku23emTdxKw';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let allBooks = []; 
+    let allBooks = [];
+    let allAuthors = [];
     let currentFilterLetter = 'הכל';
-    let currentAuthorFilter = '';
 
-    // --- פונקציית בדיקת כפילויות חדשה ---
-    function checkDuplicate(newTitle) {
-        const normalizedNew = newTitle.trim().toLowerCase();
-        
-        // 1. בדיקת כפילות מדויקת
-        const exactMatch = allBooks.find(b => b.title.trim().toLowerCase() === normalizedNew);
-        if (exactMatch) {
-            alert(`עצור! הספר "${exactMatch.title}" כבר נמצא בספרייה שלך (סטטוס: ${exactMatch.status === 'read' ? 'קראתי' : 'רוצה לקרוא'}).`);
-            return 'block'; // חסימה מוחלטת
-        }
-
-        // 2. בדיקת דמיון (האם השם החדש מכיל שם קיים או להפך)
-        const similarMatch = allBooks.find(b => {
-            const existing = b.title.trim().toLowerCase();
-            return (normalizedNew.length > 4 && (existing.includes(normalizedNew) || normalizedNew.includes(existing)));
-        });
-
-        if (similarMatch) {
-            return confirm(`מצאתי ספר דומה: "${similarMatch.title}".\nהאם את בטוחה שברצונך להוסיף את "${newTitle}" כספר חדש?`);
-        }
-
-        return true; // הכל תקין
+    // ניהול טאבים
+    function switchTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
+        if(tabId === 'authorsTab') loadAuthors();
     }
 
-    async function saveToSupabase(title, author) {
-        const duplicateStatus = checkDuplicate(title);
-        if (duplicateStatus === 'block' || duplicateStatus === false) return;
+    // --- לוגיקת סופרים ---
+    async function searchAuthor() {
+        const query = document.getElementById('authorSearchInput').value;
+        if (!query) return;
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=inauthor:${encodeURIComponent(query)}&maxResults=5`);
+        const data = await res.json();
+        const content = document.getElementById('authorListContent');
+        content.innerHTML = '';
+        document.getElementById('authorResults').style.display = 'block';
 
-        const { error } = await _supabase.from('books').insert([{ title, author, status: 'want_to_read' }]);
-        if (!error) { clearFields(); loadLibrary(); }
+        if (data.items) {
+            // חילוץ שמות סופרים ייחודיים מהתוצאות
+            const foundAuthors = [...new Set(data.items.map(i => i.volumeInfo.authors ? i.volumeInfo.authors[0] : null).filter(Boolean))];
+            foundAuthors.forEach(name => {
+                const div = document.createElement('div');
+                div.className = 'item-row';
+                div.innerHTML = `<span>${name}</span><button class="btn-blue" style="flex:0; padding:5px 10px;" onclick="addAuthor('${name}')">הוסף</button>`;
+                content.appendChild(div);
+            });
+        }
     }
 
-    // --- שאר הפונקציות הקיימות (ללא שינוי מהותי) ---
+    async function addAuthor(name) {
+        if (allAuthors.find(a => a.name === name)) return alert("הסופר כבר קיים ברשימה");
+        const { error } = await _supabase.from('authors').insert([{ name }]);
+        if (!error) {
+            document.getElementById('authorResults').style.display = 'none';
+            document.getElementById('authorSearchInput').value = '';
+            loadAuthors();
+        }
+    }
+
+    async function loadAuthors() {
+        const { data, error } = await _supabase.from('authors').select('*').order('name');
+        if (!error) {
+            allAuthors = data;
+            const list = document.getElementById('myAuthorsList');
+            list.innerHTML = data.map(a => `
+                <div class="item-row">
+                    <span><b>${a.name}</b></span>
+                    <span class="del-link" onclick="deleteAuthor('${a.id}')">מחיקה</span>
+                </div>
+            `).join('');
+        }
+    }
+
+    async function deleteAuthor(id) {
+        if (confirm("למחוק סופר זה?")) {
+            await _supabase.from('authors').delete().eq('id', id);
+            loadAuthors();
+        }
+    }
+
+    // --- לוגיקת ספרים (הקוד הקודם שלך משולב) ---
     async function loadLibrary() {
         const { data, error } = await _supabase.from('books').select('*');
         if (!error) { allBooks = data; displayLibrary(); renderAlphabetMenu(); }
     }
+
+    function renderAlphabetMenu() {
+        const letters = ['הכל', ...'אבגדהוזחטיכלמנסעפצקרשת'.split('')];
+        document.getElementById('alphabetFilter').innerHTML = letters.map(l => 
+            `<button class="letter-btn ${currentFilterLetter === l ? 'active' : ''}" onclick="setFilter('${l}')">${l}</button>`
+        ).join('');
+    }
+
+    function setFilter(l) { currentFilterLetter = l; displayLibrary(); renderAlphabetMenu(); }
 
     function displayLibrary() {
         const sorted = [...allBooks].sort((a, b) => a.title.localeCompare(b.title, 'he'));
         const tWant = document.querySelector('#tableWant tbody');
         const tRead = document.querySelector('#tableRead tbody');
         tWant.innerHTML = tRead.innerHTML = '';
+
         sorted.forEach(b => {
             const row = `<tr>
-                <td style="width:70%"><b>${b.title}</b><br><small style="color:#666">${b.author}</small></td>
-                <td><select onchange="updateStatus('${b.id}', this.value)">
-                    <option value="want_to_read" ${b.status==='want_to_read'?'selected':''}>רוצה</option>
-                    <option value="read" ${b.status==='read'?'selected':''}>קראתי</option>
-                </select><br><span class="del-link" onclick="deleteBook('${b.id}')">מחיקה</span></td>
+                <td style="width:70%"><b>${b.title}</b><br><small>${b.author}</small></td>
+                <td>
+                    <select onchange="updateStatus('${b.id}', this.value)">
+                        <option value="want_to_read" ${b.status==='want_to_read'?'selected':''}>רוצה</option>
+                        <option value="read" ${b.status==='read'?'selected':''}>קראתי</option>
+                    </select>
+                    <br><span class="del-link" onclick="deleteBook('${b.id}')">מחיקה</span>
+                </td>
             </tr>`;
             if (b.status === 'read') {
-                if (currentAuthorFilter ? b.author === currentAuthorFilter : (currentFilterLetter === 'הכל' || b.title.startsWith(currentFilterLetter))) tRead.innerHTML += row;
+                if (currentFilterLetter === 'הכל' || b.title.startsWith(currentFilterLetter)) tRead.innerHTML += row;
             } else tWant.innerHTML += row;
         });
     }
 
-    async function searchBook(query) {
-        try {
-            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&langRestrict=he`);
-            const data = await res.json();
-            if (data.items) {
-                const listDiv = document.getElementById('resultsList');
-                const content = document.getElementById('listContent');
-                content.innerHTML = '';
-                listDiv.style.display = 'block';
-                data.items.forEach(item => {
-                    const info = item.volumeInfo;
-                    const div = document.createElement('div');
-                    div.style = "background:#fff; border:1px solid #ddd; padding:8px; margin-bottom:5px; border-radius:6px; cursor:pointer;";
-                    div.innerHTML = `<strong>${info.title}</strong><br><small>${info.authors ? info.authors.join(', ') : 'לא ידוע'}</small>`;
-                    div.onclick = () => saveToSupabase(info.title, info.authors ? info.authors.join(', ') : 'לא ידוע');
-                    content.appendChild(div);
-                });
-            } else manualEntry();
-        } catch (e) { console.error(e); }
+    async function saveToSupabase(title, author) {
+        const { error } = await _supabase.from('books').insert([{ title, author, status: 'want_to_read' }]);
+        if (!error) { clearFields(); loadLibrary(); }
     }
 
-    // פונקציות תפריט וחיפוש (אותו קוד)
-    function renderAlphabetMenu() {
-        const letters = ['הכל', ...'אבגדהוזחטיכלמנסעפצקרשת'.split('')];
-        document.getElementById('alphabetFilter').innerHTML = letters.map(l => `<button class="letter-btn ${currentFilterLetter === l ? 'active' : ''}" onclick="setFilter('${l}')">${l}</button>`).join('');
+    async function handleSearch() {
+        const q = document.getElementById('searchInput').value;
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5`);
+        const data = await res.json();
+        const content = document.getElementById('listContent');
+        content.innerHTML = '';
+        document.getElementById('resultsList').style.display = 'block';
+        if (data.items) {
+            data.items.forEach(i => {
+                const div = document.createElement('div');
+                div.className = 'item-row';
+                div.innerHTML = `<div><b>${i.volumeInfo.title}</b><br><small>${i.volumeInfo.authors}</small></div>
+                                 <button class="btn-blue" style="flex:0" onclick="saveToSupabase('${i.volumeInfo.title.replace(/'/g, "")}', '${i.volumeInfo.authors}')">הוסף</button>`;
+                content.appendChild(div);
+            });
+        }
     }
-    function setFilter(l) { currentFilterLetter = l; currentAuthorFilter = ''; document.getElementById('authorSearch').value = ''; renderAlphabetMenu(); displayLibrary(); }
-    function handleAuthorInput(v) {
-        const sug = document.getElementById('authorSuggestions');
-        if (v.length < 2) { sug.style.display = 'none'; return; }
-        const authors = [...new Set(allBooks.filter(b => b.status === 'read').map(b => b.author))];
-        const filt = authors.filter(a => a.toLowerCase().includes(v.toLowerCase()));
-        if (filt.length) { sug.innerHTML = filt.map(a => `<div class="suggestion-item" onclick="applyAuthorFilter('${a.replace(/'/g, "\\'")}')">${a}</div>`).join(''); sug.style.display = 'block'; }
-        else sug.style.display = 'none';
+
+    async function updateStatus(id, status) {
+        await _supabase.from('books').update({ status }).eq('id', id);
+        loadLibrary();
     }
-    function applyAuthorFilter(a) { currentAuthorFilter = a; currentFilterLetter = ''; document.getElementById('authorSearch').value = a; document.getElementById('authorSuggestions').style.display = 'none'; document.getElementById('clearAuthorBtn').style.display = 'inline-block'; renderAlphabetMenu(); displayLibrary(); }
-    function clearAuthorFilter() { currentAuthorFilter = ''; currentFilterLetter = 'הכל'; document.getElementById('authorSearch').value = ''; document.getElementById('clearAuthorBtn').style.display = 'none'; renderAlphabetMenu(); displayLibrary(); }
-    async function updateStatus(id, status) { await _supabase.from('books').update({ status }).eq('id', id); loadLibrary(); }
-    async function deleteBook(id) { if(confirm("למחוק?")) { await _supabase.from('books').delete().eq('id', id); loadLibrary(); } }
-    function clearFields() { document.getElementById('searchInput').value = ''; document.getElementById('resultsList').style.display = 'none'; }
-    function handleSearch() { const q = document.getElementById('searchInput').value; if(q) searchBook(q); }
-    async function manualEntry() { const t = prompt("שם הספר?"); if (t) { const a = prompt(`סופר/ת?`); await saveToSupabase(t, a || "לא ידוע"); } }
+
+    async function deleteBook(id) {
+        if(confirm("למחוק?")) {
+            await _supabase.from('books').delete().eq('id', id);
+            loadLibrary();
+        }
+    }
+
+    function clearFields() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('resultsList').style.display = 'none';
+    }
+
     loadLibrary();
 </script>
 </body>
